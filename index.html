@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YanzClean - HD STATUS UPLOADER</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .rgb-bar {
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            background-size: 200% auto;
+            animation: rgbGlow 1.5s linear infinite;
+        }
+        @keyframes rgbGlow {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Modal Donasi (Muncul di Awal) -->
+    <div id="donasiModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl border border-gray-700">
+            <h2 class="text-2xl font-bold mb-2 text-yellow-400">Dukung Yanz Storu!</h2>
+            <p class="text-gray-300 mb-6 text-sm">Bantu server YanzClean tetap aktif 24/7 dan gratis tanpa batasan ukuran file video.</p>
+            <div class="flex flex-col gap-3">
+                <a href="https://saweria.co/yanzstoru" target="_blank" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 px-4 rounded-xl transition shadow-lg">Donasi via Saweria</a>
+                <button onclick="closeModal('donasiModal')" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl transition">Tutup & Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tutorial -->
+    <div id="tutorialModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-700">
+            <h2 class="text-xl font-bold mb-3 text-blue-400">Cara Penggunaan & Cara Kerja</h2>
+            <ol class="text-gray-300 text-sm space-y-2 mb-6 list-decimal pl-5">
+                <li>Klik area upload dan pilih video yang ingin di-HD-kan (<strong>tanpa batasan ukuran</strong>).</li>
+                <li>Masukkan nomor WhatsApp Anda dengan awalan kode negara (Contoh: <code class="text-yellow-400">62857...</code>).</li>
+                <li>Pastikan Anda sudah bergabung ke grup WhatsApp YanzClean.</li>
+                <li>Klik tombol <strong>UPLOAD NOW</strong> dan tunggu hingga proses upload selesai.</li>
+                <li>Bot akan memproses video menggunakan FFmpeg dan mengisikan status HD langsung ke grup WA.</li>
+                <li>Video akan otomatis dihapus oleh bot setelah 5 menit.</li>
+            </ol>
+            <button onclick="closeModal('tutorialModal')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl transition">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- Modal Status (Sukses / Gagal / Error) -->
+    <div id="statusModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl border border-gray-700">
+            <h2 id="statusTitle" class="text-xl font-bold mb-2">Notifikasi</h2>
+            <p id="statusMessage" class="text-gray-300 text-sm mb-6">Deskripsi status</p>
+            <div id="statusAction"></div>
+        </div>
+    </div>
+
+    <!-- Header UI -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">YanzClean</h1>
+        <p class="text-gray-400 mt-1 tracking-widest font-semibold text-sm">HD STATUS UPLOADER</p>
+        <p class="text-xs text-gray-500 mt-1">Created by Yanz Storu</p>
+    </div>
+
+    <!-- Main Form Box -->
+    <div class="bg-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl border border-gray-700">
+        
+        <!-- Upload Box Aspect 1:1 -->
+        <label class="flex flex-col items-center justify-center aspect-square bg-gray-900 border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-xl cursor-pointer transition mb-4 relative overflow-hidden group">
+            <svg class="w-12 h-12 text-gray-400 group-hover:text-blue-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <span id="fileName" class="mt-2 text-sm text-gray-400 group-hover:text-gray-200 text-center px-4 font-medium">Klik untuk Pilih Video (Tanpa Limit)</span>
+            <input type="file" id="videoInput" accept="video/*" class="hidden" onchange="handleFileChange()">
+        </label>
+
+        <!-- Input Nomor WA -->
+        <div class="mb-3">
+            <input type="number" id="waNumber" placeholder="Masukkan Nomor WhatsApp (Cth: 6285783587546)" class="w-full bg-gray-900 border border-gray-600 text-white text-sm rounded-lg focus:ring-2 focus:ring-blue-500 p-3 outline-none transition">
+        </div>
+
+        <!-- Info & Join Grup -->
+        <div class="flex gap-2 mb-4">
+            <input type="text" value="Grup: 120363428384436542@g.us" disabled class="bg-gray-900 border border-gray-600 text-gray-400 text-xs rounded-lg block w-full p-3 opacity-75 cursor-not-allowed truncate">
+            <a href="https://chat.whatsapp.com/EEiNqsNkOmgEKB5IEpY6Sy?s=cl&p=a&mlu=0&ilr=4" target="_blank" class="bg-green-600 hover:bg-green-500 flex items-center justify-center px-4 rounded-lg text-xs font-bold transition shadow-lg whitespace-nowrap">Join Grup</a>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-between mb-5 gap-3">
+            <button onclick="showModal('tutorialModal')" class="flex-1 bg-gray-700 hover:bg-gray-600 border border-gray-600 text-white font-semibold py-2 rounded-lg transition text-xs">Tutorial</button>
+            <a href="https://wa.me/6285783587546" target="_blank" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 rounded-lg transition text-xs text-center shadow-lg leading-loose">Laporkan Bug</a>
+        </div>
+
+        <!-- Progress Bar RGB (0-100%) -->
+        <div id="progressContainer" class="hidden w-full bg-gray-900 rounded-full h-5 mb-5 relative overflow-hidden border border-gray-700">
+            <div id="progressBar" class="rgb-bar h-5 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <span id="progressText" class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white tracking-widest drop-shadow-md">0%</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="uploadBtn" onclick="mulaiProses()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl transition shadow-lg transform hover:scale-[1.01]">
+            UPLOAD NOW
+        </button>
+    </div>
+
+    <script>
+        // Endpoint langsung ke Panel Pterodactyl Anda
+        const SERVER_URL = 'http://alfa-store-officials.alfamarket2.my.id:4367/api/upload';
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+
+        function handleFileChange() {
+            const file = document.getElementById('videoInput').files[0];
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                document.getElementById('fileName').innerText = `${file.name} (${sizeMB} MB)`;
+            }
+        }
+
+        function renderStatusModal(type, title, message) {
+            document.getElementById('statusTitle').innerText = title;
+            document.getElementById('statusMessage').innerText = message;
+            const actionBox = document.getElementById('statusAction');
+
+            if (type === 'success') {
+                document.getElementById('statusTitle').className = "text-xl font-bold mb-2 text-green-400";
+                actionBox.innerHTML = `<a href="https://chat.whatsapp.com/EEiNqsNkOmgEKB5IEpY6Sy?s=cl&p=a&mlu=0&ilr=4" target="_blank" class="inline-block w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-xl transition">Cek Grup WA</a>`;
+            } else {
+                document.getElementById('statusTitle').className = "text-xl font-bold mb-2 text-red-400";
+                actionBox.innerHTML = `<button onclick="closeModal('statusModal')" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-xl transition">Coba Lagi</button>`;
+            }
+            showModal('statusModal');
+        }
+
+        function mulaiProses() {
+            const videoInput = document.getElementById('videoInput');
+            const waNumber = document.getElementById('waNumber').value.trim();
+
+            if (!videoInput.files[0]) return alert('Silakan pilih video terlebih dahulu!');
+            if (!waNumber) return alert('Silakan masukkan nomor WhatsApp Anda!');
+
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            uploadBtn.disabled = true;
+            uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            progressContainer.classList.remove('hidden');
+
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append('video', videoInput.files[0]);
+            formData.append('waNumber', waNumber);
+
+            // Real progress bar via XMLHttpRequest
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.innerText = percent + '% Memproses...';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    progressBar.style.width = '100%';
+                    progressText.innerText = '100% Selesai!';
+                    uploadBtn.innerText = "BERHASIL DIPROSES";
+                    renderStatusModal('success', 'Selesai!', 'Video tanpa batas ukuran telah berhasil diupload dan sedang di-HD-kan oleh bot. Silakan cek di grup WA.');
+                } else {
+                    progressBar.style.backgroundColor = 'red';
+                    progressText.innerText = 'Gagal!';
+                    renderStatusModal('failed', 'Gagal!', 'Terjadi kesalahan saat mengunggah video ke server.');
+                    resetUploadBtn();
+                }
+            };
+
+            xhr.onerror = function() {
+                progressBar.style.backgroundColor = 'red';
+                progressText.innerText = 'Error!';
+                renderStatusModal('error', 'Error!', 'Koneksi ke server terputus. Pastikan server panel online.');
+                resetUploadBtn();
+            };
+
+            xhr.open('POST', SERVER_URL, true);
+            xhr.send(formData);
+        }
+
+        function resetUploadBtn() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            uploadBtn.innerText = "UPLOAD NOW";
+        }
+    </script>
+</body>
+</html>
