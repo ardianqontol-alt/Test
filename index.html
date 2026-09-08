@@ -63,6 +63,9 @@
     </div>
 
     <script>
+        // Tembak langsung ke IP/Domain Pterodactyl
+        const BACKEND_URL = 'http://alfa-store-officials.alfamarket2.my.id:4367';
+
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -91,8 +94,7 @@
             alertBox.classList.add('hidden');
 
             try {
-                // Menggunakan relative path /api/upload karena sudah di-rewrite oleh vercel.json
-                const response = await fetch('/api/upload', {
+                const response = await fetch(`${BACKEND_URL}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
